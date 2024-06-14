@@ -47,3 +47,4 @@ resultados <- calif %>%
             nota = mean(nota))
 
 write.xlsx(resultados, 'resultados.xlsx')
+write.xlsx(calif[,3:30], 'estudiantes.xlsx')

@@ -11,6 +11,7 @@ theme_set(theme_bw())
 # Cargar los datos desde el archivo de Excel
 datos <- read_excel("resultados.xlsx", sheet = "notas")
 items <- read_excel("resultados.xlsx", sheet = "descripcion")
+estudiantes <- read_excel("resultados.xlsx", sheet = "estudiantes")
 
 # Crear la aplicación Shiny
 ui <- fluidPage(
@@ -24,7 +25,8 @@ ui <- fluidPage(
   
   # Histograma de notas
   fluidRow(
-    plotOutput("histograma")
+    plotOutput("histograma"),
+    plotOutput("estudiantes", height = "200px")
   ),
   
   
@@ -44,15 +46,38 @@ server <- function(input, output) {
       ggplot(aes(x = nota, fill = color)) +
       geom_histogram(color = "black", breaks = seq(0, 10, by = 0.1)) +
       labs(title = "Resultados nacionales", x = "Nota", y = "Frecuencia") +
-      scale_x_continuous(breaks = seq(0, 10, 2), lim = c(2, 6.5)) + 
-      theme(legend.position = "none")
+      scale_x_continuous(breaks = seq(0, 10, 0.5), lim = c(2, 6.5)) + 
+      theme(legend.position = "none",
+            text = element_text(size = 20),  # Cambia el tamaño de la letra en general
+            axis.title = element_text(size = 18),  # Tamaño de las etiquetas de los ejes
+            axis.text = element_text(size = 18),  # Tamaño de los números en los ejes
+            plot.title = element_text(size = 20)) +  # Tamaño del título del gráfico)
+      scale_fill_manual(values=c('#5BC0EB', 'gray'))
   })
   
-  # Filtrar datos según el código seleccionado
-  datos_filtrados <- reactive({
-    datos %>%
-      filter(CÓDIGO.DE.INFRAESTRUCTURA == input$codigo)
+  output$estudiantes <- renderPlot({
+    filtro <- estudiantes %>%
+      filter(codigo == input$codigo)
+    
+    filtro$desempeño <-ifelse(filtro$nota < 5, "Bajo", ifelse(filtro$nota < 7.5, "Medio", "Alto"))
+    filtro$desempeño <- factor(filtro$desempeño, levels = c("Alto", "Medio", "Bajo"))
+    
+    # Crear el bar plot
+    ggplot(filtro, aes(x = 1, fill = desempeño, order = desempeño)) + 
+      geom_bar(position = "fill") +
+      labs(x = "",
+           y = "Porcentaje",
+           title = "Distribución de Desempeño de los estudiantes",
+           fill = "Desempeño") +
+      coord_flip() +
+      scale_x_discrete(labels = NULL) +
+      theme(text = element_text(size = 20),  # Cambia el tamaño de la letra en general
+            axis.title = element_text(size = 18),  # Tamaño de las etiquetas de los ejes
+            axis.text = element_text(size = 18),  # Tamaño de los números en los ejes
+            plot.title = element_text(size = 20)) +  # Tamaño del título del gráfico) +
+      scale_fill_manual(values=c('#9BC53D', '#5BC0EB', '#FFBF78'))
   })
+
   
   # Tabla con ítems y descripciones
   output$tabla_items <- DT::renderDataTable({
